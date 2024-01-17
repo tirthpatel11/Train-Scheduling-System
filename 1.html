@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="index.css">
+    <title>Train Platform Allocation</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="trainForm">
+      <div class="container">
+        <h2>Train Platform Allocation</h2>
+      </div>
+      <label for="platforms">Total Platforms:</label>
+      <input type="number" id="platforms" min="1" name="platforms" required />
+
+      <label for="totalTrains">Total Trains:</label>
+      <input type="number" id="totalTrains" min="1" name="totalTrains" required />
+
+      <div id="trainDetails"></div>
+
+      <button type="button" id="addTrainsBtn" onclick="addTrains()">
+        Add Trains
+      </button>
+      <button
+        type="button"
+        id="generateScheduleBtn"
+        onclick="generateSchedule()"
+        style="display: none"
+      >
+        Generate Schedule
+      </button>
+    </form>
+
+    <div id="scheduleTable"></div>
+
+    <script>
+      let trainSchedule = [];
+
+      function addTrains() {
+        const totalTrains = document.getElementById("totalTrains").value;
+        let detailsHTML = "<h3>Train Schedule</h3>";
+
+        for (let i = 0; i < totalTrains; i++) {
+          detailsHTML += `<div><label for="arrivalTime${i}">Train ${
+            i + 1
+          } Arrival Time (24-hour format):</label>`;
+          detailsHTML += `<input type="time" id="arrivalTime${i}" name="arrivalTime${i}" required></div>`;
+
+          detailsHTML += `<div><label for="departureTime${i}">Train ${
+            i + 1
+          } Departure Time (24-hour format):</label>`;
+          detailsHTML += `<input type="time" id="departureTime${i}" name="departureTime${i}" required></div>`;
+        }
+
+        document.getElementById("trainDetails").innerHTML = detailsHTML;
+
+        // Hide "Add Trains" button and show "Generate Schedule" button
+        document.getElementById("addTrainsBtn").style.display = "none";
+        document.getElementById("generateScheduleBtn").style.display =
+          "inline-block";
+      }
+
+      function generateSchedule() {
+        const platforms = document.getElementById("platforms").value;
+        const totalTrains = document.getElementById("totalTrains").value;
+
+        trainSchedule = [];
+
+        for (let i = 0; i < totalTrains; i++) {
+          const arrivalTime = document.getElementById(`arrivalTime${i}`).value;
+          const departureTime = document.getElementById(
+            `departureTime${i}`
+          ).value;
+          trainSchedule.push({ arrivalTime, departureTime });
+        }
+
+        // Sort train schedule based on departure times
+        trainSchedule.sort((a, b) =>
+          a.departureTime > b.departureTime ? 1 : -1
+        );
+
+        // Perform activity selection algorithm
+        const selectedTrains = [];
+        const cancelledTrains = [];
+        let lastTrain = trainSchedule[0];
+
+        selectedTrains.push(lastTrain);
+
+        for (let i = 1; i < trainSchedule.length; i++) {
+          const currentTrain = trainSchedule[i];
+
+          if (currentTrain.arrivalTime >= lastTrain.departureTime) {
+            selectedTrains.push(currentTrain);
+            lastTrain = currentTrain;
+          } else {
+            cancelledTrains.push(currentTrain);
+          }
+        }
+
+        let tableContent = "<h3>Train Schedule</h3>";
+        tableContent +=
+          "<table><tr><th>Train No</th><th>Arrival Time</th><th>Departure Time</th><th>Platform</th><th>Status</th></tr>";
+
+        // Display the selected trains in the schedule table
+        for (let i = 0; i < selectedTrains.length; i++) {
+          const platform = (i % platforms) + 1;
+          const status = i < platforms ? "Active" : "Cancelled";
+
+          tableContent += `<tr><td>${i + 1}</td><td>${
+            selectedTrains[i].arrivalTime
+          }</td>`;
+          tableContent += `<td>${selectedTrains[i].departureTime}</td><td>${platform}</td><td>${status}</td></tr>`;
+        }
+
+        // Display the cancelled trains in the schedule table
+        for (let i = 0; i < cancelledTrains.length; i++) {
+          const status = "Cancelled";
+
+          tableContent += `<tr><td>Cancelled</td><td>${cancelledTrains[i].arrivalTime}</td>`;
+          tableContent += `<td>${cancelledTrains[i].departureTime}</td><td>-</td><td>${status}</td></tr>`;
+        }
+
+        tableContent += "</table>";
+        document.getElementById("scheduleTable").innerHTML = tableContent;
+      }
+    </script>
+  </body>
+</html>
